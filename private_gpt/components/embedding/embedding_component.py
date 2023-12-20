@@ -48,7 +48,11 @@ class EmbeddingComponent:
             case "bedrock":
 
                 from llama_index.embeddings import BedrockEmbedding
+                import boto3
+
+                session = boto3.Session()
+                client = session.client("bedrock-runtime")
 
                 self.embedding_model = BedrockEmbedding(
-                    model_name=settings.bedrock.embedding_modelid,
+                    model_name=settings.bedrock.embedding_modelid, client=client,
                 )
