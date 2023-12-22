@@ -22,6 +22,7 @@ class ChatBody(BaseModel):
     context_filter: ContextFilter | None = None
     include_sources: bool = True
     stream: bool = False
+    collection_name: str | None = None
 
     model_config = {
         "json_schema_extra": {
@@ -43,6 +44,7 @@ class ChatBody(BaseModel):
                     "context_filter": {
                         "docs_ids": ["c202d5e6-7b69-4869-81cc-dd574ee8ee11"]
                     },
+                    "collection_name": "make_this_parameterizable_per_api_call",
                 }
             ]
         }
@@ -89,6 +91,7 @@ def chat_completion(
             messages=all_messages,
             use_context=body.use_context,
             context_filter=body.context_filter,
+            collection_name=body.collection_name,
         )
         return StreamingResponse(
             to_openai_sse_stream(
@@ -102,6 +105,7 @@ def chat_completion(
             messages=all_messages,
             use_context=body.use_context,
             context_filter=body.context_filter,
+            collection_name=body.collection_name,
         )
         return to_openai_response(
             completion.response, completion.sources if body.include_sources else None

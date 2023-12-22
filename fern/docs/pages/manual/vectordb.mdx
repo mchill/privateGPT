@@ -3,9 +3,13 @@ PrivateGPT supports [Qdrant](https://qdrant.tech/) and [Chroma](https://www.tryc
 
 In order to select one or the other, set the `vectorstore.database` property in the `settings.yaml` file to `qdrant` or `chroma`.
 
+You can set the default collection name used to store the vectors by setting `vectorstore.collection_name`.
+The collection can also be overridden on a per-request basis by setting the `collection_name` parameter in the request.
+
 ```yaml
 vectorstore:
   database: qdrant
+  collection_name: custom_collection
 ```
 
 ### Qdrant configuration

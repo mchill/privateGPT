@@ -139,15 +139,34 @@
         "summary": "Ingest",
         "description": "Ingests and processes a file.\n\nDeprecated. Use ingest/file instead.",
         "operationId": "ingest_v1_ingest_post",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Collection Name"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/Body_ingest_v1_ingest_post"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -170,8 +189,7 @@
               }
             }
           }
-        },
-        "deprecated": true
+        }
       }
     },
     "/v1/ingest/file": {
@@ -182,15 +200,33 @@
         "summary": "Ingest File",
         "description": "Ingests and processes a file, storing its chunks to be used as context.\n\nThe context obtained from files is later used in\n`/chat/completions`, `/completions`, and `/chunks` APIs.\n\nMost common document\nformats are supported, but you may be prompted to install an extra dependency to\nmanage a specific file type.\n\nA file can generate different Documents (for example a PDF generates one Document\nper page). All Documents IDs are returned in the response, together with the\nextracted Metadata (which is later used to improve context retrieval). Those IDs\ncan be used to filter the context used to create responses in\n`/chat/completions`, `/completions`, and `/chunks` APIs.",
         "operationId": "ingest_file_v1_ingest_file_post",
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Collection Name"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/Body_ingest_file_v1_ingest_file_post"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -224,15 +260,33 @@
         "summary": "Ingest Text",
         "description": "Ingests and processes a text, storing its chunks to be used as context.\n\nThe context obtained from files is later used in\n`/chat/completions`, `/completions`, and `/chunks` APIs.\n\nA Document will be generated with the given text. The Document\nID is returned in the response, together with the\nextracted Metadata (which is later used to improve context retrieval). That ID\ncan be used to filter the context used to create responses in\n`/chat/completions`, `/completions`, and `/chunks` APIs.",
         "operationId": "ingest_text_v1_ingest_text_post",
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Collection Name"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/IngestTextBody"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -266,6 +320,24 @@
         "summary": "List Ingested",
         "description": "Lists already ingested Documents including their Document ID and metadata.\n\nThose IDs can be used to filter the context used to create responses\nin `/chat/completions`, `/completions`, and `/chunks` APIs.",
         "operationId": "list_ingested_v1_ingest_list_get",
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Collection Name"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -273,6 +345,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -296,6 +378,22 @@
             "schema": {
               "type": "string",
               "title": "Doc Id"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Collection Name"
             }
           }
         ],
@@ -449,6 +547,17 @@
             "type": "boolean",
             "title": "Stream",
             "default": false
+          },
+          "collection_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection Name"
           }
         },
         "type": "object",
@@ -458,6 +567,7 @@
         "title": "ChatBody",
         "examples": [
           {
+            "collection_name": "make_this_parameterizable_per_api_call",
             "context_filter": {
               "docs_ids": [
                 "c202d5e6-7b69-4869-81cc-dd574ee8ee11"
@@ -583,6 +693,17 @@
             "examples": [
               2
             ]
+          },
+          "collection_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection Name"
           }
         },
         "type": "object",

@@ -97,9 +97,11 @@ class ChunksService:
         self,
         text: str,
         context_filter: ContextFilter | None = None,
+        collection_name: str | None = None,
         limit: int = 10,
         prev_next_chunks: int = 0,
     ) -> list[Chunk]:
+        self.vector_store_component.initialize_vector_store(collection_name)
         index = VectorStoreIndex.from_vector_store(
             self.vector_store_component.vector_store,
             storage_context=self.storage_context,

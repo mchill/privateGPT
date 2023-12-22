@@ -102,6 +102,10 @@ class LLMSettings(BaseModel):
 
 class VectorstoreSettings(BaseModel):
     database: Literal["chroma", "qdrant"]
+    collection_name: str = Field(
+        "make_this_parameterizable_per_api_call",
+        description="The name of the collection to use in the vectorstore database.",
+    )
 
 
 class LocalSettings(BaseModel):

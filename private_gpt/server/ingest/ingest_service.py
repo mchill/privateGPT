@@ -34,6 +34,7 @@ class IngestService:
         node_store_component: NodeStoreComponent,
     ) -> None:
         self.llm_service = llm_component
+        self.vector_store_component = vector_store_component
         self.storage_context = StorageContext.from_defaults(
             vector_store=vector_store_component.vector_store,
             docstore=node_store_component.doc_store,
@@ -53,7 +54,7 @@ class IngestService:
             self.storage_context, self.ingest_service_context, settings=settings()
         )
 
-    def _ingest_data(self, file_name: str, file_data: AnyStr) -> list[IngestedDoc]:
+    def _ingest_data(self, file_name: str, file_data: AnyStr, collection_name: str | None = None) -> list[IngestedDoc]:
         logger.debug("Got file data of size=%s to ingest", len(file_data))
         # llama-index mainly supports reading from files, so
         # we have to create a tmp file to read for it to work
@@ -65,35 +66,38 @@ class IngestService:
                     path_to_tmp.write_bytes(file_data)
                 else:
                     path_to_tmp.write_text(str(file_data))
-                return self.ingest_file(file_name, path_to_tmp)
+                return self.ingest_file(file_name, path_to_tmp, collection_name)
             finally:
                 tmp.close()
                 path_to_tmp.unlink()
 
-    def ingest_file(self, file_name: str, file_data: Path) -> list[IngestedDoc]:
+    def ingest_file(self, file_name: str, file_data: Path, collection_name: str | None = None) -> list[IngestedDoc]:
         logger.info("Ingesting file_name=%s", file_name)
+        self.vector_store_component.initialize_vector_store(collection_name)
         documents = self.ingest_component.ingest(file_name, file_data)
         logger.info("Finished ingestion file_name=%s", file_name)
         return [IngestedDoc.from_document(document) for document in documents]
 
-    def ingest_text(self, file_name: str, text: str) -> list[IngestedDoc]:
+    def ingest_text(self, file_name: str, text: str, collection_name: str | None = None) -> list[IngestedDoc]:
         logger.debug("Ingesting text data with file_name=%s", file_name)
-        return self._ingest_data(file_name, text)
+        return self._ingest_data(file_name, text, collection_name)
 
     def ingest_bin_data(
-        self, file_name: str, raw_file_data: BinaryIO
+        self, file_name: str, raw_file_data: BinaryIO, collection_name: str | None = None
     ) -> list[IngestedDoc]:
         logger.debug("Ingesting binary data with file_name=%s", file_name)
         file_data = raw_file_data.read()
-        return self._ingest_data(file_name, file_data)
+        return self._ingest_data(file_name, file_data, collection_name)
 
-    def bulk_ingest(self, files: list[tuple[str, Path]]) -> list[IngestedDoc]:
+    def bulk_ingest(self, files: list[tuple[str, Path]], collection_name: str | None = None) -> list[IngestedDoc]:
         logger.info("Ingesting file_names=%s", [f[0] for f in files])
+        self.vector_store_component.initialize_vector_store(collection_name)
         documents = self.ingest_component.bulk_ingest(files)
         logger.info("Finished ingestion file_name=%s", [f[0] for f in files])
         return [IngestedDoc.from_document(document) for document in documents]
 
-    def list_ingested(self) -> list[IngestedDoc]:
+    def list_ingested(self, collection_name: str | None = None) -> list[IngestedDoc]:
+        self.vector_store_component.initialize_vector_store(collection_name)
         ingested_docs = []
         try:
             docstore = self.storage_context.docstore
@@ -121,7 +125,7 @@ class IngestService:
         logger.debug("Found count=%s ingested documents", len(ingested_docs))
         return ingested_docs
 
-    def delete(self, doc_id: str) -> None:
+    def delete(self, doc_id: str, collection_name: str | None = None) -> None:
         """Delete an ingested document.
 
         :raises ValueError: if the document does not exist
@@ -129,4 +133,5 @@ class IngestService:
         logger.info(
             "Deleting the ingested document=%s in the doc and index store", doc_id
         )
+        self.vector_store_component.initialize_vector_store(collection_name)
         self.ingest_component.delete(doc_id)

@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 
 from private_gpt.server.ingest.ingest_service import IngestService
@@ -29,16 +29,16 @@ class IngestResponse(BaseModel):
 
 
 @ingest_router.post("/ingest", tags=["Ingestion"], deprecated=True)
-def ingest(request: Request, file: UploadFile) -> IngestResponse:
+def ingest(request: Request, file: UploadFile, collection_name: str | None = None) -> IngestResponse:
     """Ingests and processes a file.
 
     Deprecated. Use ingest/file instead.
     """
-    return ingest_file(request, file)
+    return ingest_file(request, file, collection_name)
 
 
 @ingest_router.post("/ingest/file", tags=["Ingestion"])
-def ingest_file(request: Request, file: UploadFile) -> IngestResponse:
+def ingest_file(request: Request, file: UploadFile, collection_name: str | None = None) -> IngestResponse:
     """Ingests and processes a file, storing its chunks to be used as context.
 
     The context obtained from files is later used in
@@ -57,12 +57,12 @@ def ingest_file(request: Request, file: UploadFile) -> IngestResponse:
     service = request.state.injector.get(IngestService)
     if file.filename is None:
         raise HTTPException(400, "No file name provided")
-    ingested_documents = service.ingest_bin_data(file.filename, file.file)
+    ingested_documents = service.ingest_bin_data(file.filename, file.file, collection_name)
     return IngestResponse(object="list", model="private-gpt", data=ingested_documents)
 
 
 @ingest_router.post("/ingest/text", tags=["Ingestion"])
-def ingest_text(request: Request, body: IngestTextBody) -> IngestResponse:
+def ingest_text(request: Request, body: IngestTextBody, collection_name: str | None = None) -> IngestResponse:
     """Ingests and processes a text, storing its chunks to be used as context.
 
     The context obtained from files is later used in
@@ -77,28 +77,28 @@ def ingest_text(request: Request, body: IngestTextBody) -> IngestResponse:
     service = request.state.injector.get(IngestService)
     if len(body.file_name) == 0:
         raise HTTPException(400, "No file name provided")
-    ingested_documents = service.ingest_text(body.file_name, body.text)
+    ingested_documents = service.ingest_text(body.file_name, body.text, collection_name)
     return IngestResponse(object="list", model="private-gpt", data=ingested_documents)
 
 
 @ingest_router.get("/ingest/list", tags=["Ingestion"])
-def list_ingested(request: Request) -> IngestResponse:
+def list_ingested(request: Request, collection_name: str | None = None) -> IngestResponse:
     """Lists already ingested Documents including their Document ID and metadata.
 
     Those IDs can be used to filter the context used to create responses
     in `/chat/completions`, `/completions`, and `/chunks` APIs.
     """
     service = request.state.injector.get(IngestService)
-    ingested_documents = service.list_ingested()
+    ingested_documents = service.list_ingested(collection_name)
     return IngestResponse(object="list", model="private-gpt", data=ingested_documents)
 
 
 @ingest_router.delete("/ingest/{doc_id}", tags=["Ingestion"])
-def delete_ingested(request: Request, doc_id: str) -> None:
+def delete_ingested(request: Request, doc_id: str, collection_name: str | None = None) -> None:
     """Delete the specified ingested Document.
 
     The `doc_id` can be obtained from the `GET /ingest/list` endpoint.
     The document will be effectively deleted from your storage context.
     """
     service = request.state.injector.get(IngestService)
-    service.delete(doc_id)
+    service.delete(doc_id, collection_name)

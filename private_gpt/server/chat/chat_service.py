@@ -97,8 +97,10 @@ class ChatService:
         system_prompt: str | None = None,
         use_context: bool = False,
         context_filter: ContextFilter | None = None,
+        collection_name: str | None = None,
     ) -> BaseChatEngine:
         if use_context:
+            self.vector_store_component.initialize_vector_store(collection_name)
             vector_index_retriever = self.vector_store_component.get_retriever(
                 index=self.index, context_filter=context_filter
             )
@@ -121,6 +123,7 @@ class ChatService:
         messages: list[ChatMessage],
         use_context: bool = False,
         context_filter: ContextFilter | None = None,
+        collection_name: str | None = None,
     ) -> CompletionGen:
         chat_engine_input = ChatEngineInput.from_messages(messages)
         last_message = (
@@ -141,6 +144,7 @@ class ChatService:
             system_prompt=system_prompt,
             use_context=use_context,
             context_filter=context_filter,
+            collection_name=collection_name,
         )
         streaming_response = chat_engine.stream_chat(
             message=last_message if last_message is not None else "",
@@ -157,6 +161,7 @@ class ChatService:
         messages: list[ChatMessage],
         use_context: bool = False,
         context_filter: ContextFilter | None = None,
+        collection_name: str | None = None,
     ) -> Completion:
         chat_engine_input = ChatEngineInput.from_messages(messages)
         last_message = (
@@ -177,6 +182,7 @@ class ChatService:
             system_prompt=system_prompt,
             use_context=use_context,
             context_filter=context_filter,
+            collection_name=collection_name,
         )
         wrapped_response = chat_engine.chat(
             message=last_message if last_message is not None else "",

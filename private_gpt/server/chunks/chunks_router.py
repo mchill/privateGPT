@@ -15,6 +15,7 @@ class ChunksBody(BaseModel):
     context_filter: ContextFilter | None = None
     limit: int = 10
     prev_next_chunks: int = Field(default=0, examples=[2])
+    collection_name: str | None = None
 
 
 class ChunksResponse(BaseModel):
@@ -46,7 +47,7 @@ def chunks_retrieval(request: Request, body: ChunksBody) -> ChunksResponse:
     """
     service = request.state.injector.get(ChunksService)
     results = service.retrieve_relevant(
-        body.text, body.context_filter, body.limit, body.prev_next_chunks
+        body.text, body.context_filter, body.collection_name, body.limit, body.prev_next_chunks
     )
     return ChunksResponse(
         object="list",

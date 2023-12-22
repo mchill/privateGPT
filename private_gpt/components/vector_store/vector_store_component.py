@@ -36,10 +36,20 @@ def _chromadb_doc_id_metadata_filter(
 @singleton
 class VectorStoreComponent:
     vector_store: VectorStore
+    settings: Settings
 
     @inject
     def __init__(self, settings: Settings) -> None:
-        match settings.vectorstore.database:
+        self.settings = settings
+        self.initialize_vector_store()
+
+    def initialize_vector_store(self, collection_name=None):
+        if collection_name is None:
+            collection_name = self.settings.vectorstore.collection_name
+
+        self.close()
+
+        match self.settings.vectorstore.database:
             case "chroma":
                 try:
                     import chromadb  # type: ignore
@@ -58,9 +68,7 @@ class VectorStoreComponent:
                     path=str((local_data_path / "chroma_db").absolute()),
                     settings=chroma_settings,
                 )
-                chroma_collection = chroma_client.get_or_create_collection(
-                    "make_this_parameterizable_per_api_call"
-                )  # TODO
+                chroma_collection = chroma_client.get_or_create_collection(collection_name)
 
                 self.vector_store = typing.cast(
                     VectorStore,
@@ -73,7 +81,7 @@ class VectorStoreComponent:
                 from llama_index.vector_stores.qdrant import QdrantVectorStore
                 from qdrant_client import QdrantClient
 
-                if settings.qdrant is None:
+                if self.settings.qdrant is None:
                     logger.info(
                         "Qdrant config not found. Using default settings."
                         "Trying to connect to Qdrant at localhost:6333."
@@ -81,20 +89,20 @@ class VectorStoreComponent:
                     client = QdrantClient()
                 else:
                     client = QdrantClient(
-                        **settings.qdrant.model_dump(exclude_none=True)
+                        **self.settings.qdrant.model_dump(exclude_none=True)
                     )
                 self.vector_store = typing.cast(
                     VectorStore,
                     QdrantVectorStore(
                         client=client,
-                        collection_name="make_this_parameterizable_per_api_call",
-                    ),  # TODO
+                        collection_name=collection_name,
+                    ),
                 )
             case _:
                 # Should be unreachable
                 # The settings validator should have caught this
                 raise ValueError(
-                    f"Vectorstore database {settings.vectorstore.database} not supported"
+                    f"Vectorstore database {self.settings.vectorstore.database} not supported"
                 )
 
     @staticmethod
@@ -114,5 +122,6 @@ class VectorStoreComponent:
         )
 
     def close(self) -> None:
-        if hasattr(self.vector_store.client, "close"):
+        if hasattr(self, "vector_store") and hasattr(self.vector_store.client, "close"):
+            print("Closing vector store client")
             self.vector_store.client.close()
